@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 
-class Command(ABC):
-
+class Template(ABC): 
     @abstractmethod
-    def execute(**kwargs):
+    def render(self, **kwargs) -> str:
         pass

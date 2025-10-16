@@ -1,7 +1,5 @@
-from NestController import NestController
-
-
 def main():
-    NestController().execute()
+    pass
+
 if __name__ == "__main__":
     main()
