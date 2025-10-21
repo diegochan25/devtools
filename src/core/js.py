@@ -1,14 +1,18 @@
-from dataclasses import dataclass
 import json
+from abc import ABC, abstractmethod
+from copy import deepcopy
+from dataclasses import asdict, dataclass
 from json import JSONDecodeError
 from os import path, getcwd
 from typing import Any, Literal
+from src.core.namecase import case_map
 
 @dataclass 
 class PackageJson: 
     name: str | None
     version: str | None
     description: str | None = None
+    type: Literal['commonjs', 'module'] | None = None
     keywords: list[str] | None = None
     homepage: str | None = None
     bugs: str | dict[Literal['url', 'email'], str] | None = None
@@ -40,7 +44,119 @@ class PackageJson:
     workspaces: list[str] | dict[Literal['packages', 'nohoist'], list[str]] | None = None
 
     def dict(self):
-        return self.__dict__
+        dictionary = deepcopy(asdict(self))
+        for key in list(dictionary.keys()):
+            camel = case_map(key).camel
+            value = dictionary.pop(key) 
+            if value is not None:
+                dictionary[camel] = value
+        return dictionary
+    
+class ModuleSystem(ABC):
+    
+    @classmethod
+    @abstractmethod
+    def generate_import_statement(
+        cls,
+        imports: list[str | dict[str, str]] | None, 
+        default_import: str | None,
+        source: str,
+    ) -> str:
+        if not source:
+            return None
+        if not imports and not default_import:
+            return None
+        
+
+class ES6(ModuleSystem):
+    @classmethod
+    def generate_import_statement(cls, imports=[], default_import={}, source='') -> str:
+        from src.config.rule_map import RuleMap
+        js = RuleMap.create().js
+        super().generate_import_statement(imports, default_import, source)
+        
+        stmt = ['import']
+        if default_import and imports:
+                stmt.append(f"{default_import},")
+        elif default_import and not imports:
+                stmt.extend([default_import, 'from', f"\"{source}\";"])
+        
+        if imports:
+            named_imports = []
+            for named_import in imports:
+                if isinstance(named_import, str):
+                    named_imports.append(named_import)
+                elif isinstance(named_import, dict):
+                    name, alias = next(iter(named_import.items()))
+                    named_imports.append(f"{name} as {alias}")
+            
+            stmt.extend(['{' + js.br_s + ', '.join(named_imports) + js.br_s + '}', 'from', f"\"{source}\";"])
+        
+        return ' '.join(stmt)
+
+
+class CommonJS(ModuleSystem):
+    @classmethod
+    def generate_import_statement(cls, imports=[], default_import={}, source='') -> str:
+        super().generate_import_statement(imports, default_import, source)
+        from src.config.rule_map import RuleMap
+        js = RuleMap.create().js
+
+        stmt = []
+        if default_import:
+            default_import_stmt = ['const']
+            default_import_stmt.append(default_import)
+
+            default_import_stmt.extend(['=', f"require(\"{source}\");"])
+            stmt.append(' '.join(default_import_stmt))
+
+        if imports:
+            named_import_stmt = ['const']
+            named_imports = []
+            for named_import in imports:
+                if isinstance(named_import, str):
+                  named_imports.append(named_import)
+                elif isinstance(named_import, dict):
+                    name, alias = next(iter(named_import.items()))
+                    named_imports.append(f"{name}: {alias}")
+            named_import_stmt.extend(['{' + js.br_s + ', '.join(named_imports) + js.br_s + '}', '=', f"require(\"{source}\");"])
+            stmt.append(' '.join(named_import_stmt))
+
+        return '\n'.join(stmt)
+    
+class JSPackageManager(ABC):
+    name: str
+    cmd: str
+    
+class JSRuntime(ABC):
+    name: str
+    cmd: str
+
+
+class NodeJS(JSRuntime):
+    name = 'Node.js'
+    cmd = 'node'
+
+class Deno(JSRuntime):
+    name = 'Deno'
+    cmd = 'deno'
+
+class Bun(JSRuntime, JSPackageManager):
+    name = 'Bun'
+    cmd = 'bun'
+
+class NPM(JSPackageManager):
+    name = 'Node Package Manager (npm)'
+    cmd = 'npm'
+
+class Yarn(JSPackageManager):
+    name = 'Yarn'
+    cmd = 'yarn'
+
+class PNPM(JSPackageManager):
+    name = 'Performant Node Package Manager (pnpm)'
+    cmd = 'pnpm'
+
 
 class JS:
     @staticmethod
@@ -58,20 +174,13 @@ class JS:
         if path.isfile(package_json_path):
             with open(package_json_path, 'r', encoding='utf-8') as file:
                 try:
-                    package_json_dict = json.load(file)
+                    package_json_dict: dict[str, Any] = json.load(file)
                 except JSONDecodeError:
                     return None
-                keymap = {
-                    'devDependencies': 'dev_dependencies',
-                    'peerDependencies': 'peer_dependencies',
-                    'peerDependenciesMeta': 'peer_dependencies_meta',
-                    'bundledDependencies': 'bundled_dependencies',
-                    'optionalDependencies': 'optional_dependencies',
-                }
-
-                for camel, snake in keymap.items():
-                    if camel in package_json_dict:
-                        package_json_dict[snake] = keymap.pop(camel)
+                
+                for key in list(package_json_dict.keys()):
+                    snake = case_map(key).snake
+                    package_json_dict[snake] = package_json_dict.pop(key)
 
                 return PackageJson(**package_json_dict)
         else:
@@ -85,5 +194,6 @@ class JS:
         if path.isfile(package_json_path):
             with open(package_json_path, 'r+', encoding='utf-8') as file:
                 json.dump(package_json_dict, file, indent=4)
+                return True
         else:
             return None

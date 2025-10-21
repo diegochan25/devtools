@@ -1,8 +1,20 @@
-green = lambda *args, sep=' ': f"{'\033[32m'}{sep.join(args)}{'\033[0m'}"
-red = lambda *args, sep=' ': f"{'\033[31m'}{sep.join(args)}{'\033[0m'}"
-yellow = lambda *args, sep=' ': f"{'\033[33m'}{sep.join(args)}{'\033[0m'}"
-blue = lambda *args, sep=' ': f"{'\033[34m'}{sep.join(args)}{'\033[0m'}"
-gray = lambda *args, sep=' ': f"{'\033[90m'}{sep.join(args)}{'\033[0m'}"
+def green(*args, sep=' '):
+    return f"{'\033[32m'}{sep.join(args)}{'\033[0m'}"
+    
+def red(*args, sep=' '):
+    return f"{'\033[31m'}{sep.join(args)}{'\033[0m'}"
+    
+def yellow(*args, sep=' '):
+    return f"{'\033[33m'}{sep.join(args)}{'\033[0m'}"
+    
+def blue(*args, sep=' '):
+    return f"{'\033[34m'}{sep.join(args)}{'\033[0m'}"
+    
+def gray(*args, sep=' '):
+    return f"{'\033[90m'}{sep.join(args)}{'\033[0m'}"
+
+def white(*args, sep=' '):
+    return f"\033[97m{sep.join(args)}\033[0m"
 
 def ask(question: str) -> str:
     answer: str | None = None
@@ -15,4 +27,8 @@ def ask(question: str) -> str:
 
 def die(message: str, code: int = 1) -> None:
     print(red(message))
+    exit(code)
+
+def done(message: str, code: int = 0) -> None:
+    print(green(message))
     exit(code)
