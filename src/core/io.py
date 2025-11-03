@@ -1,34 +1,43 @@
-def green(*args, sep=' '):
-    return f"{'\033[32m'}{sep.join(args)}{'\033[0m'}"
-    
-def red(*args, sep=' '):
-    return f"{'\033[31m'}{sep.join(args)}{'\033[0m'}"
-    
-def yellow(*args, sep=' '):
-    return f"{'\033[33m'}{sep.join(args)}{'\033[0m'}"
-    
-def blue(*args, sep=' '):
-    return f"{'\033[34m'}{sep.join(args)}{'\033[0m'}"
-    
-def gray(*args, sep=' '):
-    return f"{'\033[90m'}{sep.join(args)}{'\033[0m'}"
+from typing import Literal
 
-def white(*args, sep=' '):
-    return f"\033[97m{sep.join(args)}\033[0m"
+def style(
+        *args: str,
+        fg: Literal['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'gray', 'white'] | None = None,
+        bg: Literal['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'gray', 'white'] | None = None,
+        end: str = '',
+        sep: str = ' '
+) -> str:
+    foreground = {
+        'red': '\x1b[31m',
+        'green': '\x1b[32m',
+        'yellow': '\x1b[33m',
+        'blue': '\x1b[34m',
+        'magenta': '\x1b[35m',
+        'cyan': '\x1b[36m',
+        'gray': '\x1b[90m',
+        'white': '\x1b[97m'
+    }
 
-def ask(question: str) -> str:
-    answer: str | None = None
-    while answer is None:
-        answer = str(input(f"{blue(question)}\n")).strip()
-        if not answer:
-            print(yellow("Please provide an answer"))
-            answer = None
-    return answer
+    background = {
+        'red': '\x1b[41m',
+        'green': '\x1b[42m',
+        'yellow': '\x1b[43m',
+        'blue': '\x1b[44m',
+        'magenta': '\x1b[45m',
+        'cyan': '\x1b[46m',
+        'gray': '\x1b[100m',
+        'white': '\x1b[107m'
+    }
 
-def die(message: str, code: int = 1) -> None:
-    print(red(message))
-    exit(code)
+    stop = '\x1b[0m'
 
-def done(message: str, code: int = 0) -> None:
-    print(green(message))
+    styles = (foreground[fg] if fg is not None else '') + (background[bg] if bg is not None else '')
+
+    return (styles if styles else '') + sep.join(args) + (stop if styles else '') + end
+
+def log(*values: object, end: str = '\n', sep: str = ' ', fg: str = 'red'):
+    print(style(*[str(v) for v in values], fg=fg, end=end, sep=sep))
+
+def die(*values: object, end: str = '\n', sep: str = ' ', code: int = 1, fg: str = 'red'):
+    print(style(*[str(v) for v in values], fg=fg, end=end, sep=sep))
     exit(code)
