@@ -1,0 +1,24 @@
+{
+    "javascript": {
+        "semicolon": "use",
+        "quotes": "double",
+        "bracket_spacing": "space",
+        "block_spacing": "space",
+        "indent": "space",
+        "tab_width": 4,
+        "trailing_comma": "none",
+        "arrow_fn_parentheses": "use",
+        "event_var_name": "event",
+        "eol": "crlf",
+        "runtime": "bun",
+        "module": "es6",
+        "package_manager": "bun"
+    },
+    "python": {
+        "quotes": "single",
+        "f_str_quotes": "double",
+        "indent": "space",
+        "tab_width": 4,
+        "docstring": "google"
+    }
+}

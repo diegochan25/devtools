@@ -110,6 +110,3 @@ class NumPyDocstring(PythonDocstring):
                 docstring.append(indent)
         docstring.append(quotes * 3)
         return linesep.join(docstring)
-
-
-print(GoogleDocstring.generate({ 'description': 'Greets the user', 'params': [ ('name', 'str'), ('age', 'int') ], 'returns': 'str', 'raises': ['ValueError'] }))

@@ -1,6 +1,6 @@
 from typing import Literal
 
-def style(
+def s(
         *args: str,
         fg: Literal['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'gray', 'white'] | None = None,
         bg: Literal['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'gray', 'white'] | None = None,
@@ -35,9 +35,9 @@ def style(
 
     return (styles if styles else '') + sep.join(args) + (stop if styles else '') + end
 
-def log(*values: object, end: str = '\n', sep: str = ' ', fg: str = 'red'):
-    print(style(*[str(v) for v in values], fg=fg, end=end, sep=sep))
+def log(*values: object, end: str = '\n', sep: str = ' ', fg: Literal['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'gray', 'white'] = 'red'):
+    print(s(*[str(v) for v in values], fg=fg, end=end, sep=sep))
 
-def die(*values: object, end: str = '\n', sep: str = ' ', code: int = 1, fg: str = 'red'):
-    print(style(*[str(v) for v in values], fg=fg, end=end, sep=sep))
+def die(*values: object, end: str = '\n', sep: str = ' ', code: int = 1, fg: Literal['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'gray', 'white']= 'red'):
+    print(s(*[str(v) for v in values], fg=fg, end=end, sep=sep))
     exit(code)

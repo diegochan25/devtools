@@ -1,5 +1,8 @@
-from core.io import style
-from typing import Any
+from abc import ABC, abstractmethod
+from copy import deepcopy
+from dataclasses import asdict, dataclass, is_dataclass
+from src.core.io import s
+from typing import Any, Self, get_args, get_origin
 
 def tostring(data: Any, indent: int = 0) -> str:
     tab = ' ' * (4 * indent)
@@ -8,45 +11,140 @@ def tostring(data: Any, indent: int = 0) -> str:
     if isinstance(data, dict):
         for name, value in data.items():
             lines.append(
-                tab + style(f"{name}:", fg='white', end='\n' if isinstance(value, (dict, list, tuple, set)) else ' ') +
+                tab + s(f"{name}:", fg='white', end='\n' if isinstance(value, (dict, list, tuple, set)) else ' ') +
                 (tostring(value, indent + 1) if isinstance(value, (dict, list, tuple, set)) else tostring(value))
             )
     elif isinstance(data, (list, tuple, set)):
         for item in data:
             lines.append(
-                tab + style('-', fg='white', end='\n' if isinstance(item, (dict, list, tuple, set)) else ' ') +
+                tab + s('-', fg='white', end='\n' if isinstance(item, (dict, list, tuple, set)) else ' ') +
                 (tostring(item, indent + 1) if isinstance(item, (dict, list, tuple, set)) else tostring(item))
             )
     elif isinstance(data, str):
-        return style(f"'{data}'", fg='green')
+        return s(f"'{data}'", fg='green')
     elif data is None:
-        return style('None', fg='gray')
+        return s('None', fg='gray')
+    elif isinstance(data, (int, float, bool)):
+        return s(str(data), fg='yellow')
+    elif hasattr(data, '__name__'):
+        return s(data.__name__, fg='magenta')
     else:
-        return style(str(data), fg='yellow')
-
+        return s(repr(data), fg='magenta')
+    
     return '\n'.join(lines)
 
-print(tostring({
-    "name": "my-project",
-    "version": "1.0.0",
-    "description": "A sample project",
-    "main": "index.js",
-    "scripts": {
-        "start": "node index.js",
-        "dev": "bun run dev",
-        "build": "bun run build",
-        "test": "bun test"
-    },
-    "keywords": ["example", "project", "bun", "node"],
-    "author": "Your Name",
-    "license": "MIT",
-    "dependencies": {
-        "react": "^18.2.0",
-        "react-dom": "^18.2.0"
-    },
-    "devDependencies": {
-        "typescript": "^5.6.3",
-        "@types/react": "^18.2.28",
-        "@types/react-dom": "^18.2.14"
-    }
-}))
+def parse(value: str) -> str | bool | int | float:
+    try:
+        return int(value)
+    except ValueError:
+        try:
+            return float(value)
+        except ValueError:
+            if (v := value.strip().lower()) in ('true', 'false'):
+                return v == 'true'
+            else:
+                return str(value).strip().lower()
+            
+class Serializable(ABC):
+    def tostring(self) -> str:
+        return tostring(self.todict())
+
+    def todict(self) -> dict:
+        def serialize(value):
+            if isinstance(value, Serializable):
+                return value.todict()
+            elif is_dataclass(value):
+                return {k: serialize(v) for k, v in asdict(value).items()}
+            elif isinstance(value, dict):
+                return {k: serialize(v) for k, v in value.items()}
+            elif isinstance(value, (list, tuple)):
+                return [serialize(v) for v in value]
+            else:
+                return deepcopy(value)
+        return {k: serialize(v) for k, v in self.__dict__.items()}
+
+    @classmethod
+    def fromdict(cls, dictionary: dict) -> Self:
+        kwargs = {}
+        annotations = cls.__annotations__
+
+        for key, classname in annotations.items():
+            if key not in dictionary:
+                raise ValueError(f"Missing required attribute '{key}' in dict.")
+
+            value = dictionary.get(key)
+
+            if isinstance(value, dict):
+                if hasattr(classname, 'fromdict'):
+                    value = classname.fromdict(value)
+                elif is_dataclass(classname):
+                    value = classname(**value)
+            elif isinstance(value, list):
+                origin = get_origin(classname)
+                args = get_args(classname)
+                if origin in (list, tuple) and args:
+                    subtype = args[0]
+                    if hasattr(subtype, 'fromdict'):
+                        value = [subtype.fromdict(i) if isinstance(i, dict) else i for i in value]
+            kwargs[key] = value
+        return cls(**kwargs)
+
+@dataclass
+class NameCase(Serializable):
+    camel: str
+    kebab: str
+    pascal: str
+    spaced: str
+    snake: str
+    upper: str
+
+def case_map(string: str) -> NameCase:
+    words = []
+    start = 0
+    prev = None
+
+    for i in range(len(string)):
+        curr = string[i]
+        prev = None
+        next = None
+        if i != 0:
+            prev = string[i - 1]
+        if i < len(string) - 1:
+            next = string[i + 1]
+        if prev is not None:
+            if curr.isupper() and prev and prev.islower():
+                words.append(string[start:i])
+                start = i
+            if curr.isdigit() and prev.isalpha():
+                words.append(string[start:i])
+                start = i
+            if curr.isalpha() and prev.isdigit():
+                words.append(string[start:i])
+                start = i
+            if next is not None:
+                if curr.isupper() and next.islower():
+                    words.append(string[start:i])
+                    start = i
+    words.append(string[start:])
+
+    words = [s.lower() for w in words for substr in w.split('_') for s in substr.split('-') if s]
+
+    return NameCase(
+        camel=''.join([words[0]] + [w.capitalize() for w in words[1:]]),
+        kebab='-'.join(words),
+        pascal=''.join(w.capitalize() for w in words),
+        spaced=' '.join(words),
+        snake='_'.join(words),
+        upper='_'.join(words).upper()
+    )
+
+
+class Executable(ABC):
+    _name: str
+    _cmd: str
+
+
+    @classmethod
+    @abstractmethod
+    def get_version(cls) -> tuple[int, int, int] | None:
+        pass

@@ -1,39 +1,9 @@
 from abc import abstractmethod
-from copy import deepcopy
-from core.lib import tostring
-from dataclasses import dataclass, asdict, is_dataclass
+from src.core.lib import Serializable
+from dataclasses import dataclass
 from typing import Literal
 
-
-class LanguageConfig:
-    def tostring(self) -> str:
-        return tostring(self.todict)
-
-    def todict(self) -> dict:
-        def convert(value):
-            if isinstance(value, LanguageConfig):
-                return value.todict()
-            elif is_dataclass(value):
-                return {k: convert(v) for k, v in asdict(value).items()}
-            elif isinstance(value, dict):
-                return {k: convert(v) for k, v in value.items()}
-            elif isinstance(value, (list, tuple)):
-                return [convert(v) for v in value]
-            else:
-                return deepcopy(value)
-        return {k: convert(v) for k, v in self.__dict__.items()}
-    
-    @classmethod
-    def fromdict(cls, dictionary: dict) -> 'LanguageConfig':
-        for attr in list(cls.__annotations__.keys()):
-            if attr not in dictionary:
-                raise ValueError(f"Missing required attribute '{attr}' in dictionary.")
-        for attr in list(dictionary.keys()):
-            if attr not in cls.__annotations__:
-                raise ValueError(f"Unexpected key '{attr}' in dictionary.")
-        return cls(**dictionary)
-
-    
+class LanguageConfig(Serializable):    
     @staticmethod
     @abstractmethod
     def default() -> 'LanguageConfig':
@@ -52,6 +22,7 @@ class JavaScriptConfig(LanguageConfig):
     event_var_name: str
     eol: Literal['cr', 'lf', 'crlf', 'os']
     runtime: Literal['node', 'bun', 'deno']
+    module: Literal['commonjs', 'es6']
     package_manager: Literal['npm', 'yarn', 'pnpm', 'bun']
 
     @staticmethod
@@ -60,7 +31,7 @@ class JavaScriptConfig(LanguageConfig):
             semicolon='use',
             quotes='double',
             bracket_spacing='space',
-            block_spacing='tight',
+            block_spacing='space',
             indent='space',
             tab_width=4,
             trailing_comma='none',
@@ -68,13 +39,14 @@ class JavaScriptConfig(LanguageConfig):
             event_var_name='event',
             eol='crlf',
             runtime='bun',
+            module='es6',
             package_manager='bun'
         )
 
 
 @dataclass
 class PythonConfig(LanguageConfig):
-    str_quotes: Literal['double', 'single']
+    quotes: Literal['double', 'single']
     f_str_quotes: Literal['double', 'single']
     indent: Literal['tab', 'space']
     tab_width: int
@@ -83,11 +55,11 @@ class PythonConfig(LanguageConfig):
     @staticmethod
     def default() -> 'PythonConfig':
         return PythonConfig(
-            str_quotes='single',
+            quotes='single',
             f_str_quotes='double',
             indent='space',
             tab_width=4,
-            docstring_quotes='google',
+            docstring='google',
         )
 
 @dataclass 
@@ -96,8 +68,8 @@ class ConfigData(LanguageConfig):
     python: PythonConfig 
     
     @staticmethod
-    def default() -> 'ConfigData': 
+    def default() -> 'ConfigData':
         return ConfigData( 
             javascript = JavaScriptConfig.default(), 
             python = PythonConfig.default() 
-    )
+        )
