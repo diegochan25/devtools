@@ -1,7 +1,10 @@
-from abc import ABC, abstractmethod
+import re
+import subprocess
+from abc import ABC
 from copy import deepcopy
 from dataclasses import asdict, dataclass, is_dataclass
 from src.core.io import s
+from subprocess import CalledProcessError
 from typing import Any, Self, get_args, get_origin
 
 def tostring(data: Any, indent: int = 0) -> str:
@@ -143,8 +146,26 @@ class Executable(ABC):
     _name: str
     _cmd: str
 
-
     @classmethod
-    @abstractmethod
     def get_version(cls) -> tuple[int, int, int] | None:
-        pass
+        try:
+            output = subprocess.run(
+                f"{cls._cmd} --version",
+                shell=True,
+                check=True,
+                capture_output=True,
+                text=True
+            ).stdout.strip()
+
+            m = re.search(r"\bv?(\d+)(?:\.(\d+))?(?:\.(\d+))?", output)
+            if not m:
+                return None
+            
+            groups = m.groups()
+            major = int(groups[0]) if groups[0] else 0
+            minor = int(groups[1]) if groups[1] else 0
+            patch = int(groups[2]) if groups[2] else 0
+            return (major, minor, patch)
+
+        except (CalledProcessError, FileNotFoundError):
+            return None

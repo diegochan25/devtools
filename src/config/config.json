@@ -19,6 +19,7 @@
         "f_str_quotes": "double",
         "indent": "space",
         "tab_width": 4,
+        "eol": "crlf",
         "docstring": "google"
     }
 }

@@ -50,6 +50,7 @@ class PythonConfig(LanguageConfig):
     f_str_quotes: Literal['double', 'single']
     indent: Literal['tab', 'space']
     tab_width: int
+    eol: Literal['cr', 'lf', 'crlf', 'os']
     docstring: Literal['rest', 'google', 'numpy']
 
     @staticmethod
@@ -59,6 +60,7 @@ class PythonConfig(LanguageConfig):
             f_str_quotes='double',
             indent='space',
             tab_width=4,
+            eol = 'crlf',
             docstring='google',
         )
 
