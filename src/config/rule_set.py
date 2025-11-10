@@ -81,11 +81,3 @@ class RuleSet(LanguageRules):
             js = JavaScriptRules.generate(),
             py = PythonRules.generate()
         )
-    
-print(
-    JavaScriptRules.generate().module.import_stmt(
-        source='fs',
-        imports=['readFileSync', {'writeFileSync': 'write'}],
-        default='fs'
-    )
-)
