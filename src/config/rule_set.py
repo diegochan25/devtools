@@ -50,7 +50,8 @@ class JavaScriptRules(LanguageRules):
             module = CommonJS if cfg.module == 'commonjs' else ES6,
             package_manager = NPM if cfg.module == 'npm' else Yarn if cfg.module == 'yarn' else PNPM if cfg.module == 'pnpm' else Bun
         )
-    
+
+@dataclass
 class PythonRules(LanguageRules):
     q: str
     f_q: str
@@ -81,3 +82,11 @@ class RuleSet(LanguageRules):
             js = JavaScriptRules.generate(),
             py = PythonRules.generate()
         )
+    
+print(RuleSet.generate().js.module.export_stmt(
+    exports = [
+        'isEvent',
+        {'isPartOfTheActionableAbstractBaseClass': 'isActionable'}
+    ],
+    default = 'handler'
+))

@@ -13,14 +13,14 @@ class JavaScriptModuleSystem(ABC):
     def import_stmt(
         cls,
         source: str,
-        imports: list[str | dict[str, str]] | None = None,
-        default: str | None = None
+        imports: list[str | dict[str, str]] | None,
+        default: str | None
     ) -> str:
         pass
 
     @classmethod
     @abstractmethod
-    def export_stmt(cls) -> str:
+    def export_stmt(cls, exports: list[str | dict[str, str]] | None, default: str | None) -> str:
         pass
 
 class CommonJS(JavaScriptModuleSystem):
@@ -54,11 +54,30 @@ class CommonJS(JavaScriptModuleSystem):
         return rules.eol.join(lines)
 
     @classmethod
-    def export_stmt(cls) -> str:
+    def export_stmt(cls, exports: list[str] | None = None, default: str | None = None) -> str:
+        if not (bool(exports) ^ bool(default)):
+            return ''
+        
         from src.config.rule_set import JavaScriptRules
         rules = JavaScriptRules.generate()
+
+        stmt = ['module.exports', '=']
+
+        if default:
+            stmt.append(default + rules.semi)
         
-        return ''
+        elif exports and len(exports):
+            module_exports = ['{']
+            for i, export in enumerate(exports):
+                if isinstance(export, dict) and len(export) == 1:
+                    name, alias = next(iter(export.items()))
+                    module_exports.append(f"{alias}: {name}{',' if i < len(exports) - 1 else rules.es5_c}")
+                elif isinstance(export, str):
+                    module_exports.append(f"{rules.t}{export}{',' if i < len(exports) - 1 else rules.es5_c}")
+            module_exports.append('}' + rules.semi)
+            stmt.append(rules.eol.join(module_exports))
+
+        return ' '.join(stmt)
 
 
 class ES6(JavaScriptModuleSystem):
@@ -94,13 +113,32 @@ class ES6(JavaScriptModuleSystem):
         stmt.append(f"{rules.q}{source}{rules.q}{rules.semi}")
 
         return ' '.join(stmt)
-
+ 
     @classmethod
-    def export_stmt(cls) -> str:
+    def export_stmt(cls, exports: list[str] | None = None, default: str | None = None) -> str:
+        if exports is None and default is None:
+            return ''
+        
         from src.config.rule_set import JavaScriptRules
         rules = JavaScriptRules.generate()
-        
-        return ''
+
+        lines = []
+
+        if exports is not None and len(exports):
+            named_exports = []
+            for i, export in enumerate(exports):
+                if isinstance(export, dict) and len(export) == 1:
+                    name, alias = next(iter(export.items()))
+                    named_exports.append(f"{name} as {alias}{',' if i < len(exports) - 1 else rules.es5_c}")
+                elif isinstance(export, str):
+                    named_exports.append(f"{export}{',' if i < len(exports) - 1 else rules.es5_c}")
+            lines.append(f"export {{{rules.br_s}{' '.join(named_exports)}{rules.br_s}}}{rules.semi}")
+
+        if default is not None:
+            lines.append(f"export default {default}{rules.semi}")
+
+        return rules.eol.join(lines)
+
 
 class NodeJS(JavaScriptRuntime):
     _name = 'Node.js'
