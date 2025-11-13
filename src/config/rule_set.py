@@ -70,23 +70,3 @@ class PythonRules(LanguageRules):
             eol = eol,
             docstring = ReSTDocstring if cfg.docstring == 'rest' else GoogleDocstring if cfg.docstring == 'google' else NumPyDocstring 
         )
-
-@dataclass
-class RuleSet(LanguageRules):
-    js: JavaScriptRules
-    py: PythonRules
-
-    @classmethod
-    def generate(cls):
-        return RuleSet(
-            js = JavaScriptRules.generate(),
-            py = PythonRules.generate()
-        )
-    
-print(RuleSet.generate().js.module.export_stmt(
-    exports = [
-        'isEvent',
-        {'isPartOfTheActionableAbstractBaseClass': 'isActionable'}
-    ],
-    default = 'handler'
-))

@@ -1,13 +1,68 @@
 from abc import ABC, abstractmethod
+from json import JSONDecodeError
+import json
+from os import getcwd, linesep, path
+from subprocess import CalledProcessError
+import subprocess
+from typing import Literal
+from src.core.io import die, s
 from src.core.lib import Executable
 
 class JavaScriptRuntime(Executable):
     pass
 
 class JavaScriptPackageManager(Executable):
-    pass
+    _install_cmd: str
+
+    @classmethod
+    @abstractmethod
+    def restore(cls, omit: list[Literal['dev', 'optional', 'peer']] | None) -> bool:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def install(cls, *packages: str, dev: bool = False) -> bool:
+        try:
+            subprocess.run(
+                f"{cls._cmd} {cls._install_cmd} {'-D' if dev else ''} {' '.join(packages)}"
+            )
+            return True
+        except CalledProcessError:
+            return False
+
+    @classmethod
+    def run(cls, script: str, at: str = getcwd()) -> str:
+        abspath = path.abspath(at)
+        package_json_path = path.join(abspath, 'package.json')
+        
+        if not path.isfile(package_json_path) or not path.getsize(package_json_path):
+            die(f"package.json could not be found at {abspath}")
+
+        with open(package_json_path, 'r', encoding='utf-8') as file:
+            try:
+                package_json = json.load(file)
+                if (scripts := package_json.get('scripts', None)) is None or not isinstance(scripts, dict) or scripts.get(script, None) is None:
+                    die(f"Unable to find script '{script}' in package.json at {abspath}")
+                try:
+                    command = f"{cls._cmd} run {script}" 
+                    result = subprocess.run(
+                        command,
+                        shell=True,
+                        check=True,
+                        capture_output=True,
+                        text=True
+                    )
+
+                    return result.stdout
+                
+                except CalledProcessError as e:
+                    die(s(f"Execution of script '{script}' failed.", fg='red'), s(e.stderr, fg='gray'), sep=linesep)
+            except JSONDecodeError:
+                die(f"Malformed package.json at {abspath}")
 
 class JavaScriptModuleSystem(ABC):
+    name: str
+
     @classmethod
     @abstractmethod
     def import_stmt(
@@ -24,6 +79,8 @@ class JavaScriptModuleSystem(ABC):
         pass
 
 class CommonJS(JavaScriptModuleSystem):
+    name = 'commonjs'
+
     @classmethod
     def import_stmt(
         cls,
@@ -81,6 +138,8 @@ class CommonJS(JavaScriptModuleSystem):
 
 
 class ES6(JavaScriptModuleSystem):
+    name = 'es6'
+
     @classmethod
     def import_stmt(
         cls,
@@ -151,15 +210,68 @@ class Deno(JavaScriptRuntime):
 class Bun(JavaScriptRuntime, JavaScriptPackageManager):
     _name = 'Bun'
     _cmd = 'bun'
+    _install_cmd = 'add'
+
+    @classmethod
+    def restore(cls, omit: list[Literal['dev', 'optional', 'peer']] | None = None) -> bool:
+        pass
+
+    @classmethod
+    def install(cls, packages: list[str]) -> dict[str, bool]:
+        pass
+
+    @classmethod
+    def install_dev(cls, dev_packages: list[str]) -> dict[str, bool]:
+        pass
 
 class NPM(JavaScriptPackageManager):
     _name = 'npm'
     _cmd = 'npm'
+    _install_cmd = 'install'
+
+    @classmethod
+    def restore(cls, omit: list[Literal['dev', 'optional', 'peer']] | None = None) -> bool:
+        pass
+
+    @classmethod
+    def install(cls, packages: list[str]) -> dict[str, bool]:
+        pass
+
+    @classmethod
+    def install_dev(cls, dev_packages: list[str]) -> dict[str, bool]:
+        pass
+
 
 class Yarn(JavaScriptPackageManager):
     _name = 'Yarn'
     _cmd = 'yarn'
+    _install_cmd = 'add'
+
+    @classmethod
+    def restore(cls, omit: list[Literal['dev', 'optional', 'peer']] | None = None) -> bool:
+        pass
+
+    @classmethod
+    def install(cls, packages: list[str]) -> dict[str, bool]:
+        pass
+
+    @classmethod
+    def install_dev(cls, dev_packages: list[str]) -> dict[str, bool]:
+        pass
 
 class PNPM(JavaScriptPackageManager):
     _name = 'pnpm'
     _cmd = 'pnpm'
+    _install_cmd = 'install'
+
+    @classmethod
+    def restore(cls, omit: list[Literal['dev', 'optional', 'peer']] | None = None) -> bool:
+        pass
+
+    @classmethod
+    def install(cls, packages: list[str]) -> dict[str, bool]:
+        pass
+
+    @classmethod
+    def install_dev(cls, dev_packages: list[str]) -> dict[str, bool]:
+        pass
