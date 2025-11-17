@@ -5,7 +5,7 @@ from copy import deepcopy
 from dataclasses import asdict, dataclass, is_dataclass
 from src.core.io import s
 from subprocess import CalledProcessError
-from typing import Any, Self, get_args, get_origin
+from typing import Any, Self, Union, get_args, get_origin
 
 def tostring(data: Any, indent: int = 0) -> str:
     tab = ' ' * (4 * indent)
@@ -52,28 +52,51 @@ class Serializable(ABC):
     def tostring(self) -> str:
         return tostring(self.todict())
 
-    def todict(self) -> dict:
+    def todict(self, drop_none: bool = True) -> dict:
+        def not_null(d: dict) -> dict:
+            result = {}
+            for k, v in d.items():
+                if v is None:
+                    continue
+                if isinstance(v, dict):
+                    cleaned = not_null(v)
+                    if cleaned:
+                        result[k] = cleaned
+                else:
+                    result[k] = v
+            return result
+
         def serialize(value):
             if isinstance(value, Serializable):
-                return value.todict()
+                return value.todict(drop_none=drop_none)
             elif is_dataclass(value):
-                return {k: serialize(v) for k, v in asdict(value).items()}
+                data = {k: serialize(v) for k, v in asdict(value).items()}
+                return not_null(data) if drop_none else data
             elif isinstance(value, dict):
-                return {k: serialize(v) for k, v in value.items()}
+                data = {k: serialize(v) for k, v in value.items()}
+                return not_null(data) if drop_none else data
             elif isinstance(value, (list, tuple)):
                 return [serialize(v) for v in value]
             else:
                 return deepcopy(value)
-        return {k: serialize(v) for k, v in self.__dict__.items()}
+
+        base = {k: serialize(v) for k, v in self.__dict__.items()}
+
+        return not_null(base) if drop_none else base
 
     @classmethod
     def fromdict(cls, dictionary: dict) -> Self:
         kwargs = {}
         annotations = cls.__annotations__
 
+        optional = lambda annotation: type(None) in get_args(annotation) if get_origin(annotation) is Union else False
+
         for key, classname in annotations.items():
             if key not in dictionary:
-                raise ValueError(f"Missing required attribute '{key}' in dict.")
+                if optional(classname):
+                    kwargs[key] = None
+                else:
+                    raise ValueError(f"Missing required attribute '{key}' in dict.")
 
             value = dictionary.get(key)
 

@@ -1,11 +1,11 @@
 from typing import Literal
 
 def s(
-        *args: str,
-        fg: Literal['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'gray', 'white'] | None = None,
-        bg: Literal['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'gray', 'white'] | None = None,
-        end: str = '',
-        sep: str = ' '
+    *args: str,
+    fg: Literal['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'gray', 'white'] | None = None,
+    bg: Literal['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'gray', 'white'] | None = None,
+    end: str = '',
+    sep: str = ' '
 ) -> str:
     foreground = {
         'red': '\x1b[31m',
@@ -38,6 +38,6 @@ def s(
 def log(*values: object, end: str = '\n', sep: str = ' ', fg: Literal['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'gray', 'white'] = 'red'):
     print(s(*[str(v) for v in values], fg=fg, end=end, sep=sep))
 
-def die(*values: object, end: str = '\n', sep: str = ' ', code: int = 1, fg: Literal['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'gray', 'white']= 'red'):
+def die(*values: object, end: str = '', sep: str = ' ', code: int = 1, fg: Literal['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'gray', 'white']= 'red'):
     print(s(*[str(v) for v in values], fg=fg, end=end, sep=sep))
     exit(code)

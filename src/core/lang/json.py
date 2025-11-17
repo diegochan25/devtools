@@ -1,6 +1,9 @@
+import json
 from dataclasses import dataclass
-from typing import Any, Literal, Optional, TypedDict
+from json import JSONDecodeError
+from os import getcwd, path
 from src.core.lib import Serializable
+from typing import Any, Literal, Optional, TypedDict
 
 class PackageJsonBugsDict(TypedDict):
     url: Optional[str]
@@ -58,6 +61,30 @@ class PackageJson(Serializable):
     private: Optional[bool] = None
     publishConfig: Optional[dict[str, Any]] = None
     workspaces: Optional[list[str] | dict[str, list[str]]] = None
+
+    @staticmethod
+    def find(at: str = getcwd()) -> str | None:
+        cwd = path.abspath(at)
+        while not path.abspath(cwd) == path.abspath(path.dirname(cwd)):
+            package_json_path = path.join(cwd, 'package.json')
+            if path.isfile(package_json_path):
+                return package_json_path
+            else:
+                cwd = path.dirname(cwd)
+        return None
+    
+    @staticmethod
+    def load(filepath: str) -> PackageJson | None:
+        if not path.isfile(filepath) or not path.getsize(filepath):
+            return None
+        with open(filepath, 'r', encoding='utf-8') as file:
+            try:
+                pkg_json_dict = json.load(file)
+            except JSONDecodeError:
+                return None
+            else:
+                return PackageJson.fromdict(pkg_json_dict)
+                 
 
 @dataclass
 class TsConfigCompilerOptions(Serializable):

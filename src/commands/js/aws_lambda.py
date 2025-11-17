@@ -1,7 +1,7 @@
 from os import path, makedirs
 from src.core.template import Template
 from src.config.rule_set import JavaScriptRules
-from src.core.decorators import requires
+from src.core.decorators import abortable, requires
 from src.core.command import Command
 from src.core.io import die
 from src.core.lang.json import PackageJson
@@ -12,10 +12,11 @@ class JSLambda(Command):
     _name = 'lambda'
     _help = 'Create an AWS-style Node 22.x Lambda Function package'
 
+    @abortable
     @requires('path')
     def execute(self, **kwargs):
         abspath = path.abspath(path.normpath(kwargs.get('path')))
-        ftname = path.basename(abspath)
+        basename = path.basename(abspath)
         rules = JavaScriptRules.generate()
         module = JavaScriptRules.generate().module.name
 
@@ -28,21 +29,22 @@ class JSLambda(Command):
             package_json = Template(
                 filename = 'package.json',
                 contents = PackageJson(
-                name = case_map(ftname).kebab,
+                name = case_map(basename).kebab,
                 version = '0.1.0',
                 type = 'commonjs' if module == 'commonjs' else 'module',
                 private = True,
                 keywords = ['AWS', 'Lambda', 'Node 22', 'CommonJS' if module == 'commonjs' else 'ES6', 'JavaScript'],
-                module = index_js.filename
+                main = index_js.filename
             ).todict())
 
             index_js.touch(at=abspath)
             package_json.touch(at=abspath)
 
             if (pm := rules.package_manager).get_version() is not None:
-                if pm.install('@types/aws-lambda', dev=True):
-                    pass
-                    
+                if pm.install('@types/aws-lambda', at=abspath, dev=True):
+                    die(f"Lambda function '{basename}' successfully created at {abspath}", fg='green', code=0)
+                else:
+                    die(f"Lambda function '{basename}' could not be created.")
 
     def construct(self, parent):
         parser = super().construct(parent)

@@ -1,5 +1,6 @@
 import json
 from os import path
+from typing import Literal
 from src.core.io import die
 
 class Template:
@@ -33,14 +34,18 @@ class Template:
             return json.dumps(self._contents, indent=4)
         return str(self._contents)
     
-    def touch(self, at: str) -> bool:
+    def touch(self, at: str) -> Literal[True]:
         abspath = path.abspath(path.join(at, self.filename))
 
-        if path.exists(abspath) and path.isfile(abspath) and path.getsize():
+        if path.exists(abspath) and path.isfile(abspath) and path.getsize(abspath):
             die(f"File at {abspath} exists and is not empty.")
-        
-        with open(abspath, 'w', encoding='utf-8') as file:
-            file.write(self.render())
+        else:
+            try:
+                with open(abspath, 'w', encoding='utf-8') as file:
+                    file.write(self.render())
+                    return True
+            except: 
+                die(f"There was an error writing to the file at {abspath}")
 
     def __init__(self, filename: str, contents: list[str] | dict):
         self._filename = filename

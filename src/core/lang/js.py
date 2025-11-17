@@ -2,29 +2,68 @@ from abc import ABC, abstractmethod
 from json import JSONDecodeError
 import json
 from os import getcwd, linesep, path
+import re
 from subprocess import CalledProcessError
 import subprocess
 from typing import Literal
 from src.core.io import die, s
 from src.core.lib import Executable
 
-class JavaScriptRuntime(Executable):
+class JSRuntime(Executable):
+    # inherited from Executable
+    # _name: str
+    # _cmd : str
     pass
 
-class JavaScriptPackageManager(Executable):
+class JSPackageManager(Executable):
+    # inherited from Executable
+    # _name: str
+    # _cmd : str
     _install_cmd: str
 
     @classmethod
     @abstractmethod
-    def restore(cls, omit: list[Literal['dev', 'optional', 'peer']] | None) -> bool:
-        pass
+    def restore(cls, at: str=getcwd(), omit: list[Literal['dev', 'optional', 'peer']] | None = None) -> bool:
+        if not path.isdir(at) or not path.isfile((pkg_json_path := path.join(at, 'package.json'))):
+            die(f"No package.json could be found at {at}")
+        
+        with open(pkg_json_path, 'r', encoding='utf-8') as file:
+            try:
+                json.load(file)
+            except JSONDecodeError:
+                die(f"Malformed package.json at {at}")
+
+        try:
+            subprocess.run(
+                f"{cls._cmd} install",
+                cwd=at,
+                shell=True,
+                check=True,
+                capture_output=True
+            )
+            return True
+        except CalledProcessError:
+            return False
 
     @classmethod
     @abstractmethod
-    def install(cls, *packages: str, dev: bool = False) -> bool:
+    def install(cls, *packages: str, at: str = getcwd(), dev: bool = False) -> bool:
+        if not path.isdir(at) or not path.isfile((pkg_json_path := path.join(at, 'package.json'))):
+            die(f"No package.json could be found at {at}")
+        
+        with open(pkg_json_path, 'r', encoding='utf-8') as file:
+            try:
+                json.load(file)
+            except JSONDecodeError:
+                die(f"Malformed package.json at {at}")
+
         try:
             subprocess.run(
-                f"{cls._cmd} {cls._install_cmd} {'-D' if dev else ''} {' '.join(packages)}"
+                f"{cls._cmd} {cls._install_cmd} {'-D' if dev else ''} {' '.join(packages)}",
+                cwd=at,
+                shell=True,
+                check=True,
+                capture_output=True
             )
             return True
         except CalledProcessError:
@@ -60,7 +99,7 @@ class JavaScriptPackageManager(Executable):
             except JSONDecodeError:
                 die(f"Malformed package.json at {abspath}")
 
-class JavaScriptModuleSystem(ABC):
+class JSModuleSystem(ABC):
     name: str
 
     @classmethod
@@ -78,7 +117,12 @@ class JavaScriptModuleSystem(ABC):
     def export_stmt(cls, exports: list[str | dict[str, str]] | None, default: str | None) -> str:
         pass
 
-class CommonJS(JavaScriptModuleSystem):
+    @classmethod
+    @abstractmethod
+    def inline_export(cls, token: str, default: bool) -> str | None:
+        pass
+
+class CommonJS(JSModuleSystem):
     name = 'commonjs'
 
     @classmethod
@@ -135,9 +179,49 @@ class CommonJS(JavaScriptModuleSystem):
             stmt.append(rules.eol.join(module_exports))
 
         return ' '.join(stmt)
+    
+    @classmethod
+    def inline_export(cls, token: str, default: bool = False):
+        trimsplit = lambda ln: [str(w).strip() for w in ln.split(' ') if w]
+        isvar = lambda ln: bool(trimsplit(ln)[0] in ('var', 'let', 'const'))
+        isclass = lambda ln: bool('class' in ln)
+        isfunc = lambda ln: (
+            re.search(r"\bfunction\s*\*?\b", ln)
+            or re.search(r"\([^)]*\)\s*=>", ln)
+            or re.search(r"[A-Za-z_$][A-Za-z0-9_$]*\s*=>", ln)
+        )
+        matchindex = lambda pattern, array: [i for i, s in enumerate(array) if re.compile(pattern).search(s)][0]
 
+        words = trimsplit(token)
+        # remove typescript type
+        if isvar(token):
+            if words[1].endswith(':'):
+                words = [words[0], words[1].removesuffix(':'), *words[words.index('='):]]
+            elif words[2] == ':':
+                words = [words[:1], *words[words.index('='):]]
 
-class ES6(JavaScriptModuleSystem):
+        token = ' '.join(words)
+        name = None
+        export = ''
+
+        if isvar(token):
+            name = words[1]
+            export = ' '.join(token.split('=')[1])
+        elif isfunc(token):
+            index = matchindex(r"^function\s*\*?$", words) + 1
+            fn_name = words[index]
+            name = fn_name[:fn_name.index('(')] if '(' in fn_name else fn_name
+        elif isclass(token):
+            name = words.pop(words.index('class') + 1)
+            export = ' '.join(words)
+
+        if default:
+            return f"module.exports = {export}"
+        elif name is not None:
+            return f"exports.{name} = {export}"
+        return None
+
+class ES6(JSModuleSystem):
     name = 'es6'
 
     @classmethod
@@ -197,81 +281,43 @@ class ES6(JavaScriptModuleSystem):
             lines.append(f"export default {default}{rules.semi}")
 
         return rules.eol.join(lines)
+    
+    @classmethod
+    def inline_export(cls, token: str, default: bool = False):
+        trimsplit = lambda ln: [str(w).strip() for w in ln.split(' ') if w]
+        isvar = lambda ln: bool(trimsplit(ln)[0] in ('var', 'let', 'const'))
+        if default:
+            if isvar(token):
+                return f"export default {token.split('=')[1]}"
+            else:
+                return f"export default {token}"
+        else:
+            return f"export {token}"
 
-
-class NodeJS(JavaScriptRuntime):
+class NodeJS(JSRuntime):
     _name = 'Node.js'
     _cmd = 'node'
 
-class Deno(JavaScriptRuntime):
+class Deno(JSRuntime):
     _name = 'Deno'
     _cmd = 'deno'
 
-class Bun(JavaScriptRuntime, JavaScriptPackageManager):
+class Bun(JSRuntime, JSPackageManager):
     _name = 'Bun'
     _cmd = 'bun'
     _install_cmd = 'add'
 
-    @classmethod
-    def restore(cls, omit: list[Literal['dev', 'optional', 'peer']] | None = None) -> bool:
-        pass
-
-    @classmethod
-    def install(cls, packages: list[str]) -> dict[str, bool]:
-        pass
-
-    @classmethod
-    def install_dev(cls, dev_packages: list[str]) -> dict[str, bool]:
-        pass
-
-class NPM(JavaScriptPackageManager):
+class NPM(JSPackageManager):
     _name = 'npm'
     _cmd = 'npm'
     _install_cmd = 'install'
 
-    @classmethod
-    def restore(cls, omit: list[Literal['dev', 'optional', 'peer']] | None = None) -> bool:
-        pass
-
-    @classmethod
-    def install(cls, packages: list[str]) -> dict[str, bool]:
-        pass
-
-    @classmethod
-    def install_dev(cls, dev_packages: list[str]) -> dict[str, bool]:
-        pass
-
-
-class Yarn(JavaScriptPackageManager):
+class Yarn(JSPackageManager):
     _name = 'Yarn'
     _cmd = 'yarn'
     _install_cmd = 'add'
 
-    @classmethod
-    def restore(cls, omit: list[Literal['dev', 'optional', 'peer']] | None = None) -> bool:
-        pass
-
-    @classmethod
-    def install(cls, packages: list[str]) -> dict[str, bool]:
-        pass
-
-    @classmethod
-    def install_dev(cls, dev_packages: list[str]) -> dict[str, bool]:
-        pass
-
-class PNPM(JavaScriptPackageManager):
+class PNPM(JSPackageManager):
     _name = 'pnpm'
     _cmd = 'pnpm'
     _install_cmd = 'install'
-
-    @classmethod
-    def restore(cls, omit: list[Literal['dev', 'optional', 'peer']] | None = None) -> bool:
-        pass
-
-    @classmethod
-    def install(cls, packages: list[str]) -> dict[str, bool]:
-        pass
-
-    @classmethod
-    def install_dev(cls, dev_packages: list[str]) -> dict[str, bool]:
-        pass

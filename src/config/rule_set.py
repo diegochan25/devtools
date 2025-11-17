@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from os import linesep
 from typing import Self
 from src.config.cli_config import CLIConfig
-from src.core.lang.js import ES6, NPM, PNPM, Bun, CommonJS, Deno, JavaScriptModuleSystem, JavaScriptPackageManager, JavaScriptRuntime, NodeJS, Yarn
+from src.core.lang.js import ES6, NPM, PNPM, Bun, CommonJS, Deno, JSModuleSystem, JSPackageManager, JSRuntime, NodeJS, Yarn
 from src.core.lang.py import GoogleDocstring, NumPyDocstring, PythonDocstring, ReSTDocstring
 from src.core.lib import Serializable
 
@@ -26,9 +26,9 @@ class JavaScriptRules(LanguageRules):
     arr_fn_pr: str
     event: str
     eol: str
-    runtime: JavaScriptRuntime
-    module: JavaScriptModuleSystem
-    package_manager: JavaScriptPackageManager
+    runtime: JSRuntime
+    module: JSModuleSystem
+    package_manager: JSPackageManager
 
     @classmethod
     def generate(cls):

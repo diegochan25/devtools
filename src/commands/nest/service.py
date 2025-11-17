@@ -1,15 +1,14 @@
-from os import getcwd, makedirs, path
+from os import makedirs, path
 from src.core.command import Command
 from src.core.decorators import abortable, requires
 from src.core.io import die
 from src.core.lang.json import PackageJson
-from src.core.lib import case_map
-from src.templates.nest.nest_controller import nest_controller
+from src.templates.nest import nest_service
 
 
-class NestController(Command):
-    _name = 'controller'
-    _help = 'Create a NestJS controller in the path specified, relative to the project\'s entry point.'
+class NestService(Command):
+    _name = 'service'
+    _help = 'Create a NestJS service in the path specified, relative to the project\'s entry point.'
 
     @abortable
     @requires('path')
@@ -34,24 +33,22 @@ class NestController(Command):
 
         makedirs(filepath, exist_ok = True)
 
-        controller = nest_controller(
-            name = filename,
-            use_service = path.isfile(path.join(filepath, f"{case_map(filename).kebab}.service.ts")),
-            use_path = True
+        service = nest_service(
+            name = filename
         )
         
-        if controller.touch(at=filepath):
-            die(f"Controller {filename} successfully created at {filepath}", fg='green', code = 0)
+        if service.touch(at=filepath):
+            die(f"Service {filename} successfully created at {filepath}", fg='green', code = 0)
         else:
-            die(f"There was a problem creating a controller at {filepath}")
+            die(f"There was a problem creating a service at {filepath}")
 
     def construct(self, parent):
         parser = super().construct(parent)
-        parser.add_argument('path', help='Relative path to the controller file to create.')
+        parser.add_argument('path', help='Relative path to the service file to create.')
         parser.add_argument(
             '-f', '--flat', 
             action='store_true', 
-            help='If set, generates the controller file without creating a new directory.'
+            help='If set, generates the service file without creating a new directory.'
         )
 
         parser.set_defaults(fn=self.execute)
