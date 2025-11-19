@@ -1,24 +1,45 @@
 import json
-from dataclasses import dataclass
-from os import makedirs, path
+from os import linesep, path
+from typing import Literal
 from src.core.io import die
-from typing import Any
 
-@dataclass 
 class Template:
-    filename: str
-    contents: list[str] | dict[str | int, Any]
+    __filename: str
+    __contents: list[str] | dict
+
+    @property
+    def filename(self) -> str:
+        return self.__filename
+
+    @property
+    def contents(self) -> list[str] | dict:
+        return self.__contents
     
-    def write(self, at: str):
-        abs_path = path.abspath(path.join(at, self.filename))
-        if path.exists(abs_path):
-            with open(abs_path, 'r', encoding='utf-8') as f:
-                if f.read():
-                    die(f"File at {abs_path} exists and is not empty. Aborting to avoid overriding.")
-                    
-        makedirs(path.dirname(abs_path), exist_ok=True)
-        with open(abs_path, 'w+', encoding='utf-8') as file:
-            if isinstance(self.contents, list):
-                file.write('\n'.join(self.contents))
-            elif isinstance(self.contents, dict):
-                file.write(json.dumps(self.contents, indent=4))
+    @property
+    def ext(self) -> str:
+        return path.splitext(self.__filename)[1].removesuffix('.')
+
+    def render(self) -> str:
+        if isinstance(self.__contents, list):
+            return linesep.join(self.__contents)
+        elif isinstance(self.__contents, dict):
+            return json.dumps(self.__contents, indent=4)
+        return str(self.__contents)
+    
+    def touch(self, at: str) -> Literal[True]:
+        abspath = path.abspath(path.join(at, self.filename))
+
+        if path.exists(abspath) and path.isfile(abspath) and path.getsize(abspath):
+            die(f"File at {abspath} exists and is not empty.")
+        else:
+            try:
+                with open(abspath, 'w', encoding='utf-8') as file:
+
+                    file.write(self.render())
+                    return True
+            except: 
+                die(f"There was an error writing to the file at {abspath}")
+
+    def __init__(self, filename: str, contents: list[str] | dict):
+        self.__filename = filename
+        self.__contents = contents if isinstance(contents, dict) else [ln for ln in contents if ln is not None] if isinstance(contents, list) else []

@@ -1,7 +1,7 @@
-from abc import ABC, abstractmethod
-import argparse
+from abc import abstractmethod
+from argparse import _SubParsersAction, ArgumentParser
 
-class Command(ABC):
+class Command:
     _name: str
     _help: str
 
@@ -9,22 +9,14 @@ class Command(ABC):
     def name(self) -> str:
         return self._name
     
-    @name.setter
-    def name(self, value: str) -> None:
-        self._name = value
-
     @property
     def help(self) -> str:
         return self._help
     
-    @help.setter
-    def help(self, value: str) -> None:
-        self._help = value 
-    
     @abstractmethod
-    def execute(self):
+    def execute(self, **kwargs) -> None:
         pass
 
-    @abstractmethod
-    def construct(self, parent: argparse._SubParsersAction) -> argparse.ArgumentParser:
-        return parent.add_parser(self._name, help=self._help)
+    def construct(self, parent: _SubParsersAction) -> ArgumentParser | _SubParsersAction:
+        parser = parent.add_parser(name=self._name, help=self._help)
+        return parser

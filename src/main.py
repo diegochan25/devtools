@@ -1,24 +1,37 @@
-import argparse
-from src.commands.config_get import ConfigGet
-from src.commands.config_passthrough import ConfigPassthrough
-from src.commands.config_scan import ConfigScan
-from src.commands.nest_controller import NestController
-from src.commands.nest_passthrough import NestPassthrough
+from argparse import ArgumentParser
+from src.commands.config.cmd import ConfigCmd
+from src.commands.config.get import ConfigGet
+from src.commands.config.scan import ConfigScan
+from src.commands.config.set import ConfigSet
+from src.commands.js.cmd import JSCmd
+from src.commands.js.aws_lambda import JSLambda
+from src.commands.nest.cmd import NestCmd
+from src.commands.nest.controller import NestController
+from src.commands.nest.module import NestModule
+from src.commands.nest.service import NestService
 
 def main():
-    root = argparse.ArgumentParser(prog='devtools', description='Developer tools for language and framework-related file creation utilities.')
-    root_parsers = root.add_subparsers(dest='command')
+    cli = ArgumentParser(prog='devtools')
+    commands = cli.add_subparsers(dest='commands')
 
-    config = ConfigPassthrough().construct(root_parsers)
+    config = ConfigCmd().construct(commands)
+    js = JSCmd().construct(commands)
+    nest = NestCmd().construct(commands)
+
     ConfigScan().construct(config)
     ConfigGet().construct(config)
+    ConfigSet().construct(config)
 
-    nest = NestPassthrough().construct(root_parsers)
+    JSLambda().construct(js)
+
+    NestModule().construct(nest)
     NestController().construct(nest)
+    NestService().construct(nest)
 
-    args = root.parse_args()
-    args.func(**vars(args))  
+    args = cli.parse_args()
+    
+    if hasattr(args, 'fn'):
+        args.fn(**vars(args))
 
 if __name__ == '__main__':
     main()
-

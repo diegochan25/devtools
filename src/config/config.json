@@ -1,18 +1,25 @@
 {
     "javascript": {
-        "quotes": "double",
         "semicolon": "use",
-        "indent": "space",
-        "tab_width": 4,
-        "arrow_function_parentheses": "use",
-        "event_var_name": "event",
-        "trailing_comma": "avoid",
-        "eol": "crlf",
-        "module_system": "es6",
+        "quotes": "double",
         "bracket_spacing": "space",
         "block_spacing": "space",
-        "class_file_case": "pascal",
+        "indent": "space",
+        "tab_width": 4,
+        "trailing_comma": "none",
+        "arrow_fn_parentheses": "use",
+        "event_var_name": "event",
+        "eol": "lf",
         "runtime": "bun",
+        "module": "es6",
         "package_manager": "bun"
+    },
+    "python": {
+        "quotes": "single",
+        "f_str_quotes": "double",
+        "indent": "space",
+        "tab_width": 4,
+        "eol": "lf",
+        "docstring": "google"
     }
 }
