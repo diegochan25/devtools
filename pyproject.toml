@@ -1,0 +1,20 @@
+[project]
+name = 'devtools'
+version = '0.1.0'
+description = 'File creation and templating utilities for common languages and frameworks'
+readme = 'README.md'
+requires-python = '>=3.12'
+dependencies = []
+
+[project.scripts]
+devtools = 'devtools.main:main'
+
+[build-system]
+requires = ['setuptools']
+build-backend = 'setuptools.build_meta'
+
+[tool.setuptools]
+package-dir = {'' = '.'}
+
+[tool.setuptools.packages.find]
+where = ['.']
