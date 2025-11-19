@@ -39,9 +39,9 @@ class NestModule(Command):
             use_controller = path.isfile(path.join(filepath, f"{case_map(filename).kebab}.controller.ts")),
             use_service = path.isfile(path.join(filepath, f"{case_map(filename).kebab}.service.ts")),
         )
-        
+
         if module.touch(at=filepath):
-            die(f"Module {filename} successfully created at {filepath}", fg='green', code = 0)
+            die(f"Module '{filename}' successfully created at {filepath}", fg='green', code = 0)
         else:
             die(f"There was a problem creating a module at {filepath}")
 

@@ -31,9 +31,9 @@ class JavaScriptRules(LanguageRules):
     package_manager: JSPackageManager
 
     @classmethod
-    def generate(cls):
+    def generate(cls) -> 'JavaScriptRules':
         cfg = CLIConfig.read().javascript
-        eol = '\r' if cfg.eol == 'cr' else '\n' if cfg.eol == 'lf' else '\r\n' if cfg.eol == 'crlf' else linesep
+        eol = '\n' if cfg.eol == 'lf' else '\r\n' if cfg.eol == 'crlf' else linesep
         return JavaScriptRules(
             semi = ';' if cfg.semicolon == 'use' else 'avoid',
             q = '"' if cfg.quotes == 'double' else "'",
@@ -60,9 +60,9 @@ class PythonRules(LanguageRules):
     docstring: PythonDocstring
 
     @classmethod
-    def generate(cls):
+    def generate(cls) -> 'PythonRules':
         cfg = CLIConfig.read().python
-        eol = '\r' if cfg.eol == 'cr' else '\n' if cfg.eol == 'lf' else '\r\n' if cfg.eol == 'crlf' else linesep
+        eol = '\n' if cfg.eol == 'lf' else '\r\n' if cfg.eol == 'crlf' else linesep
         return PythonRules(
             q = '"' if cfg.quotes == 'double' else "'",
             f_q = '"' if cfg.f_str_quotes == 'double' else "'",

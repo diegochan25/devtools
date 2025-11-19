@@ -1,6 +1,6 @@
 import json
 from os import path
-from typing import Any
+from typing import Any, Optional
 from src.config.config_data import ConfigData
 from src.core.decorators import throws
 
@@ -15,7 +15,7 @@ class CLIConfig:
                 return
 
     @classmethod
-    @throws(ValueError)
+    # @throws(ValueError)
     def read(cls, default: bool = False) -> ConfigData:
         if default:
             return ConfigData.default()
@@ -26,10 +26,12 @@ class CLIConfig:
         
     @classmethod
     @throws(ValueError)        
-    def write(cls, config: dict, default: bool = False) -> bool:
+    def write(cls, config: Optional[dict] = None, default: bool = False) -> bool:
         if not (bool(config) ^ bool(default)):
             raise ValueError('Either provide a config dictionary, or use the --default flag to reset to default.')
         
+        config = config if config is not None else CLIConfig.read(default=True).todict()
+
         ConfigData.fromdict(config)
 
         cls.touch()

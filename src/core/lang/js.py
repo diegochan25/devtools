@@ -32,7 +32,6 @@ class JSPackageManager(Executable):
                 json.load(file)
             except JSONDecodeError:
                 die(f"Malformed package.json at {at}")
-
         try:
             subprocess.run(
                 f"{cls._cmd} install",
@@ -114,6 +113,14 @@ class JSModuleSystem(ABC):
 
     @classmethod
     @abstractmethod
+    def is_import(
+        cls,
+        ln: str
+    ) -> bool:
+        pass
+
+    @classmethod
+    @abstractmethod
     def export_stmt(cls, exports: list[str | dict[str, str]] | None, default: str | None) -> str:
         pass
 
@@ -153,6 +160,11 @@ class CommonJS(JSModuleSystem):
            lines.append(f"const {default} = require({rules.q}{source}{rules.q}){rules.semi}")
 
         return rules.eol.join(lines)
+    
+    @classmethod
+    def is_import(cls, ln: str) -> bool:
+        words = [str(w).strip() for w in ln.split(' ') if w]
+        return any([True for w in words if w.startswith('require')])
 
     @classmethod
     def export_stmt(cls, exports: list[str] | None = None, default: str | None = None) -> str:
@@ -182,8 +194,7 @@ class CommonJS(JSModuleSystem):
     
     @classmethod
     def inline_export(cls, token: str, default: bool = False):
-        trimsplit = lambda ln: [str(w).strip() for w in ln.split(' ') if w]
-        isvar = lambda ln: bool(trimsplit(ln)[0] in ('var', 'let', 'const'))
+        isvar = lambda ln: bool(ln.split()[0] in ('var', 'let', 'const'))
         isclass = lambda ln: bool('class' in ln)
         isfunc = lambda ln: (
             re.search(r"\bfunction\s*\*?\b", ln)
@@ -192,7 +203,7 @@ class CommonJS(JSModuleSystem):
         )
         matchindex = lambda pattern, array: [i for i, s in enumerate(array) if re.compile(pattern).search(s)][0]
 
-        words = trimsplit(token)
+        words = token.split()
         # remove typescript type
         if isvar(token):
             if words[1].endswith(':'):
@@ -256,6 +267,11 @@ class ES6(JSModuleSystem):
         stmt.append(f"{rules.q}{source}{rules.q}{rules.semi}")
 
         return ' '.join(stmt)
+    
+    @classmethod
+    def is_import(cls, ln):
+        words = ln.split()
+        return 'import' in words
  
     @classmethod
     def export_stmt(cls, exports: list[str] | None = None, default: str | None = None) -> str:
@@ -284,8 +300,7 @@ class ES6(JSModuleSystem):
     
     @classmethod
     def inline_export(cls, token: str, default: bool = False):
-        trimsplit = lambda ln: [str(w).strip() for w in ln.split(' ') if w]
-        isvar = lambda ln: bool(trimsplit(ln)[0] in ('var', 'let', 'const'))
+        isvar = lambda ln: bool(ln.split()[0] in ('var', 'let', 'const'))
         if default:
             if isvar(token):
                 return f"export default {token.split('=')[1]}"

@@ -1,8 +1,10 @@
 from os import getcwd, makedirs, path
+from src.config.rule_set import JavaScriptRules
 from src.core.command import Command
 from src.core.decorators import abortable, requires
-from src.core.io import die
+from src.core.io import die, log
 from src.core.lang.json import PackageJson
+from src.core.lang.nest import NestJSModule
 from src.core.lib import case_map
 from src.templates.nest.nest_controller import nest_controller
 
@@ -34,14 +36,37 @@ class NestController(Command):
 
         makedirs(filepath, exist_ok = True)
 
+        names = case_map(filename)
+
         controller = nest_controller(
-            name = filename,
-            use_service = path.isfile(path.join(filepath, f"{case_map(filename).kebab}.service.ts")),
+            names = names,
+            use_service = path.isfile(path.join(filepath, f"{names.kebab}.service.ts")),
             use_path = True
         )
+
+        classname = f"{names.pascal}Controller"
         
         if controller.touch(at=filepath):
-            die(f"Controller {filename} successfully created at {filepath}", fg='green', code = 0)
+            if (module_path := NestJSModule.exists(at=filepath)):
+                with open(module_path, 'r', encoding='utf-8') as file:
+                    module = NestJSModule.build(file.read())
+
+                if classname not in module.controllers:
+                    m_system = JavaScriptRules.generate().module
+                    module.stmts.append(
+                        m_system.import_stmt(
+                            source=f"./{path.splitext(controller.filename)[0]}",
+                            imports=[classname]
+                        )
+                    )
+                    module.controllers.append(classname)
+
+                with open(module_path, 'w', encoding='utf-8') as file:
+                    file.write(str(module))
+            else: 
+                log(f"Consider creating a module to declare '{classname}' inside.", fg='yellow')
+
+            die(f"Controller '{filename}' successfully created at {filepath}", fg='green', code = 0)
         else:
             die(f"There was a problem creating a controller at {filepath}")
 

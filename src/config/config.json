@@ -9,7 +9,7 @@
         "trailing_comma": "none",
         "arrow_fn_parentheses": "use",
         "event_var_name": "event",
-        "eol": "crlf",
+        "eol": "lf",
         "runtime": "bun",
         "module": "es6",
         "package_manager": "bun"
@@ -19,7 +19,7 @@
         "f_str_quotes": "double",
         "indent": "space",
         "tab_width": 4,
-        "eol": "crlf",
+        "eol": "lf",
         "docstring": "google"
     }
 }

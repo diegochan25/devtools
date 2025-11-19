@@ -116,7 +116,7 @@ class Serializable(ABC):
         return cls(**kwargs)
 
 @dataclass
-class NameCase(Serializable):
+class CaseMap(Serializable):
     camel: str
     kebab: str
     pascal: str
@@ -124,7 +124,7 @@ class NameCase(Serializable):
     snake: str
     upper: str
 
-def case_map(string: str) -> NameCase:
+def case_map(string: str) -> CaseMap:
     words = []
     start = 0
     prev = None
@@ -155,7 +155,7 @@ def case_map(string: str) -> NameCase:
 
     words = [s.lower() for w in words for substr in w.split('_') for s in substr.split('-') if s]
 
-    return NameCase(
+    return CaseMap(
         camel=''.join([words[0]] + [w.capitalize() for w in words[1:]]),
         kebab='-'.join(words),
         pascal=''.join(w.capitalize() for w in words),

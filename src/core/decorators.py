@@ -25,7 +25,7 @@ def requires(*values: str) -> Callable[P, R]:
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             for val in values:
                 if val not in kwargs:
-                    die(f"Missing required key {val} in kwargs for {fn.__qualname__}.")
+                    die(f"Missing required key '{val}' in kwargs for {fn.__qualname__}.")
             return fn(*args, **kwargs)
         return wrapper
     return decorator

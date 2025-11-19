@@ -1,11 +1,11 @@
 from src.config.rule_set import JavaScriptRules
 from src.core.decorators import requires
-from src.core.lib import case_map
+from src.core.lib import CaseMap
 from src.core.template import Template
 
-@requires('name')
-def nest_controller(**kwargs) -> Template:
-    names = case_map(kwargs.get('name'))
+@requires('names')
+def nest_service(**kwargs) -> Template:
+    names: CaseMap = kwargs.get('names')
     rules = JavaScriptRules.generate()
     module = rules.module
 
@@ -15,8 +15,8 @@ def nest_controller(**kwargs) -> Template:
             module.import_stmt(source='@nestjs/common', imports=['Injectable']),
             '',
             f"@Injectable()",
-            module.inline_export(f"class {names.pascal}Service {{"),
-            '',
+            module.inline_export(f"class {names.pascal}Service{rules.blk_s}{{"),
+            rules.t,
             '}'
         ]
     )
