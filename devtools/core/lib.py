@@ -166,8 +166,8 @@ def case_map(string: str) -> CaseMap:
 
 
 class Executable(ABC):
-    _name: str
     _cmd: str
+    name: str
 
     @classmethod
     def get_version(cls) -> tuple[int, int, int] | None:

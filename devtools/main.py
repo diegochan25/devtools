@@ -8,6 +8,7 @@ from devtools.commands.js.aws_lambda import JSLambda
 from devtools.commands.nest.cmd import NestCmd
 from devtools.commands.nest.controller import NestController
 from devtools.commands.nest.module import NestModule
+from devtools.commands.nest.project import NestProject
 from devtools.commands.nest.service import NestService
 
 def main():
@@ -27,6 +28,7 @@ def main():
     NestModule().construct(nest)
     NestController().construct(nest)
     NestService().construct(nest)
+    NestProject().construct(nest)
 
     args = cli.parse_args()
     

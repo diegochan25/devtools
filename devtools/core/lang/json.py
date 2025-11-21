@@ -87,7 +87,7 @@ class PackageJson(Serializable):
                  
 
 @dataclass
-class TsConfigCompilerOptions(Serializable):
+class CompilerOptions(Serializable):
     # Type Checking
     allowUnreachableCode: Optional[bool] = None
     allowUnusedLabels: Optional[bool] = None
@@ -231,4 +231,4 @@ class TSConfigJson(Serializable):
     exclude: Optional[list[str]] = None
     extends: Optional[str] = None
     references: Optional[list[dict[str, Any]]] = None
-    compilerOptions: Optional[TsConfigCompilerOptions] = None
+    compilerOptions: Optional[CompilerOptions] = None

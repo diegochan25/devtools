@@ -11,13 +11,13 @@ from devtools.core.lib import Executable
 
 class JSRuntime(Executable):
     # inherited from Executable
-    # _name: str
+    # name: str
     # _cmd : str
     pass
 
 class JSPackageManager(Executable):
     # inherited from Executable
-    # _name: str
+    # name: str
     # _cmd : str
     _install_cmd: str
 
@@ -47,6 +47,8 @@ class JSPackageManager(Executable):
     @classmethod
     @abstractmethod
     def install(cls, *packages: str, at: str = getcwd(), dev: bool = False) -> bool:
+        packages = [p for p in packages if p]
+        
         if not path.isdir(at) or not path.isfile((pkg_json_path := path.join(at, 'package.json'))):
             die(f"No package.json could be found at {at}")
         
@@ -159,7 +161,7 @@ class CommonJS(JSModuleSystem):
         if default:
            lines.append(f"const {default} = require({rules.q}{source}{rules.q}){rules.semi}")
 
-        return rules.eol.join(lines)
+        return linesep.join(lines)
     
     @classmethod
     def is_import(cls, ln: str) -> bool:
@@ -188,7 +190,7 @@ class CommonJS(JSModuleSystem):
                 elif isinstance(export, str):
                     module_exports.append(f"{rules.t}{export}{',' if i < len(exports) - 1 else rules.es5_c}")
             module_exports.append('}' + rules.semi)
-            stmt.append(rules.eol.join(module_exports))
+            stmt.append(linesep.join(module_exports))
 
         return ' '.join(stmt)
     
@@ -220,8 +222,8 @@ class CommonJS(JSModuleSystem):
             export = ' '.join(token.split('=')[1])
         elif isfunc(token):
             index = matchindex(r"^function\s*\*?$", words) + 1
-            fn_name = words[index]
-            name = fn_name[:fn_name.index('(')] if '(' in fn_name else fn_name
+            fnname = words[index]
+            name = fnname[:fnname.index('(')] if '(' in fnname else fnname
         elif isclass(token):
             name = words.pop(words.index('class') + 1)
             export = ' '.join(words)
@@ -296,7 +298,7 @@ class ES6(JSModuleSystem):
         if default is not None:
             lines.append(f"export default {default}{rules.semi}")
 
-        return rules.eol.join(lines)
+        return linesep.join(lines)
     
     @classmethod
     def inline_export(cls, token: str, default: bool = False):
@@ -310,29 +312,29 @@ class ES6(JSModuleSystem):
             return f"export {token}"
 
 class NodeJS(JSRuntime):
-    _name = 'Node.js'
+    name = 'Node.js'
     _cmd = 'node'
 
 class Deno(JSRuntime):
-    _name = 'Deno'
+    name = 'Deno'
     _cmd = 'deno'
 
 class Bun(JSRuntime, JSPackageManager):
-    _name = 'Bun'
+    name = 'Bun'
     _cmd = 'bun'
     _install_cmd = 'add'
 
 class NPM(JSPackageManager):
-    _name = 'npm'
+    name = 'npm'
     _cmd = 'npm'
     _install_cmd = 'install'
 
 class Yarn(JSPackageManager):
-    _name = 'Yarn'
+    name = 'Yarn'
     _cmd = 'yarn'
     _install_cmd = 'add'
 
 class PNPM(JSPackageManager):
-    _name = 'pnpm'
+    name = 'pnpm'
     _cmd = 'pnpm'
     _install_cmd = 'install'

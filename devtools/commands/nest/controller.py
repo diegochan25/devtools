@@ -1,4 +1,4 @@
-from os import getcwd, makedirs, path
+from os import makedirs, path
 from devtools.config.rule_set import JavaScriptRules
 from devtools.core.command import Command
 from devtools.core.decorators import abortable, requires
@@ -6,7 +6,7 @@ from devtools.core.io import die, log
 from devtools.core.lang.json import PackageJson
 from devtools.core.lang.nest import NestJSModule
 from devtools.core.lib import case_map
-from devtools.templates.nest.nest_controller import nest_controller
+from devtools.templates.nest.nest_controller import nest_controller, nest_controller_spec_bun
 
 
 class NestController(Command):
@@ -16,8 +16,9 @@ class NestController(Command):
     @abortable
     @requires('path')
     def execute(self, **kwargs):
-        relpath = path.abspath(kwargs.get('path'))
-        flat = kwargs.get('flat', False)
+        relpath: str = path.abspath(kwargs.get('path'))
+        flat: bool = kwargs.get('flat', False)
+        test: bool = kwargs.get('test', False)
 
         if (pkg_json_path := PackageJson.find(at=relpath)) is None:
             die('Could not find a package.json file in current or parent directories.')
@@ -61,12 +62,19 @@ class NestController(Command):
                     )
                     module.controllers.append(classname)
 
-                with open(module_path, 'w', encoding='utf-8') as file:
+                with open(module_path, 'w', encoding='utf-8', newline='') as file:
                     file.write(str(module))
             else: 
                 log(f"Consider creating a module to declare '{classname}' inside.", fg='yellow')
 
-            die(f"Controller '{filename}' successfully created at {filepath}", fg='green', code = 0)
+            if test:
+                controller_spec = nest_controller_spec_bun(
+                    names = names,
+                    use_service = path.isfile(path.join(filepath, f"{names.kebab}.service.ts")),
+                )
+                controller_spec.touch(at=filepath)
+
+            die(f"Controller '{classname}' successfully created at {filepath}", f"with test file {controller_spec.filename}" if test else '', fg='green', code = 0)
         else:
             die(f"There was a problem creating a controller at {filepath}")
 
@@ -78,6 +86,10 @@ class NestController(Command):
             action='store_true', 
             help='If set, generates the controller file without creating a new directory.'
         )
-
+        parser.add_argument(
+            '-t', '--test',
+            action='store_true',
+            help='If set, creates a .controller.spec.ts file alongside the .controller.ts file for unit testing.'
+        )
         parser.set_defaults(fn=self.execute)
         return parser

@@ -1,12 +1,12 @@
 from devtools.config.rule_set import JavaScriptRules
 from devtools.core.decorators import requires
 from devtools.core.lang.nest import NestJSModule
-from devtools.core.lib import case_map
+from devtools.core.lib import CaseMap, case_map
 from devtools.core.template import Template
 
-@requires('name')
+@requires('names')
 def nest_module(**kwargs) -> Template:
-    names = case_map(kwargs.get('name'))
+    names: CaseMap = kwargs.get('names')
     rules = JavaScriptRules.generate()
     module = rules.module
     use_controller = bool(kwargs.get('use_controller', False))

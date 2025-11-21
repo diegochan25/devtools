@@ -33,7 +33,7 @@ class Template:
             die(f"File at {abspath} exists and is not empty.")
         else:
             try:
-                with open(abspath, 'w', encoding='utf-8') as file:
+                with open(abspath, 'w', encoding='utf-8', newline='') as file:
 
                     file.write(self.render())
                     return True

@@ -119,8 +119,6 @@ class NestJSModule:
             exports = arrays.get('exports')
         )
 
-        print(instance)
-
         return instance
     
     @staticmethod

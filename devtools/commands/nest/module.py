@@ -1,4 +1,4 @@
-from os import getcwd, makedirs, path
+from os import makedirs, path
 from devtools.core.command import Command
 from devtools.core.decorators import abortable, requires
 from devtools.core.io import die
@@ -34,14 +34,17 @@ class NestModule(Command):
 
         makedirs(filepath, exist_ok = True)
 
+        names = case_map(filename)
+        classname = f"{names.pascal}Module"
+
         module = nest_module(
-            name = filename,
+            names = names,
             use_controller = path.isfile(path.join(filepath, f"{case_map(filename).kebab}.controller.ts")),
             use_service = path.isfile(path.join(filepath, f"{case_map(filename).kebab}.service.ts")),
         )
 
         if module.touch(at=filepath):
-            die(f"Module '{filename}' successfully created at {filepath}", fg='green', code = 0)
+            die(f"Module '{classname}' successfully created at {filepath}", fg='green', code = 0)
         else:
             die(f"There was a problem creating a module at {filepath}")
 

@@ -59,12 +59,12 @@ class NestService(Command):
                     )
                     module.providers.append(classname)
 
-                with open(module_path, 'w', encoding='utf-8') as file:
+                with open(module_path, 'w', encoding='utf-8', newline='') as file:
                     file.write(str(module))
             else: 
                 log(f"Consider creating a module to declare '{classname}' inside.", fg='yellow')
 
-            die(f"Controller '{filename}' successfully created at {filepath}", fg='green', code = 0)
+            die(f"Service '{classname}' successfully created at {filepath}", fg='green', code = 0)
         else:
             die(f"There was a problem creating a controller at {filepath}")
 

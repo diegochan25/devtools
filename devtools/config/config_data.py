@@ -20,7 +20,6 @@ class JavaScriptConfig(LanguageConfig):
     trailing_comma: Literal['all', 'es5', 'none']
     arrow_fn_parentheses: Literal['use', 'avoid']
     event_var_name: str
-    eol: Literal['lf', 'crlf', 'os']
     runtime: Literal['node', 'bun', 'deno']
     module: Literal['commonjs', 'es6']
     package_manager: Literal['npm', 'yarn', 'pnpm', 'bun']
@@ -37,7 +36,6 @@ class JavaScriptConfig(LanguageConfig):
             trailing_comma='none',
             arrow_fn_parentheses='use',
             event_var_name='event',
-            eol='lf',
             runtime='bun',
             module='es6',
             package_manager='bun'
@@ -50,7 +48,6 @@ class PythonConfig(LanguageConfig):
     f_str_quotes: Literal['double', 'single']
     indent: Literal['tab', 'space']
     tab_width: int
-    eol: Literal['lf', 'crlf', 'os']
     docstring: Literal['rest', 'google', 'numpy']
 
     @staticmethod
@@ -60,7 +57,6 @@ class PythonConfig(LanguageConfig):
             f_str_quotes='double',
             indent='space',
             tab_width=4,
-            eol='lf',
             docstring='google',
         )
 
