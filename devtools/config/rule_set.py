@@ -14,6 +14,17 @@ class LanguageRules(Serializable):
         pass
 
 @dataclass
+class CppRules(LanguageRules):
+    t: str
+    
+    @classmethod
+    def generate(cls):
+        cfg = CLIConfig.read().cpp
+        return CppRules(
+            t = '\t' if cfg.indent == 'tab' else ' ' * cfg.tab_width
+        )
+
+@dataclass
 class JavaScriptRules(LanguageRules):
     semi: str
     q: str

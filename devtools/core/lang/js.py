@@ -64,7 +64,8 @@ class JSPackageManager(Executable):
                 cwd=at,
                 shell=True,
                 check=True,
-                capture_output=True
+                # capture_output=True,
+                text=True
             )
             return True
         except CalledProcessError:

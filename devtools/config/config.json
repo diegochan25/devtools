@@ -1,4 +1,8 @@
 {
+    "cpp": {
+        "indent": "space",
+        "tab_width": 4
+    },
     "javascript": {
         "semicolon": "use",
         "quotes": "double",

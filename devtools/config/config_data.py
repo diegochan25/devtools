@@ -10,6 +10,18 @@ class LanguageConfig(Serializable):
         pass
 
 @dataclass
+class CppConfig(LanguageConfig):
+    indent: Literal['tab', 'space']
+    tab_width: int
+
+    @staticmethod
+    def default() -> 'CppConfig':
+        return CppConfig(
+            indent='space',
+            tab_width=4
+        )
+
+@dataclass
 class JavaScriptConfig(LanguageConfig):
     semicolon: Literal['use', 'avoid']
     quotes: Literal['double', 'single']
@@ -62,12 +74,14 @@ class PythonConfig(LanguageConfig):
 
 @dataclass 
 class ConfigData(LanguageConfig):
+    cpp: CppConfig
     javascript: JavaScriptConfig 
     python: PythonConfig 
     
     @staticmethod
     def default() -> 'ConfigData':
         return ConfigData(
+            cpp = CppConfig.default(),
             javascript = JavaScriptConfig.default(), 
             python = PythonConfig.default() 
         )

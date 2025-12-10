@@ -3,6 +3,8 @@ from devtools.commands.config.cmd import ConfigCmd
 from devtools.commands.config.get import ConfigGet
 from devtools.commands.config.scan import ConfigScan
 from devtools.commands.config.set import ConfigSet
+from devtools.commands.cpp.cpp_class import CppClass
+from devtools.commands.cpp.cmd import CppCmd
 from devtools.commands.js.cmd import JSCmd
 from devtools.commands.js.aws_lambda import JSLambda
 from devtools.commands.nest.cmd import NestCmd
@@ -16,12 +18,15 @@ def main():
     commands = cli.add_subparsers(dest='commands')
 
     config = ConfigCmd().construct(commands)
+    cpp = CppCmd().construct(commands)
     js = JSCmd().construct(commands)
     nest = NestCmd().construct(commands)
 
     ConfigScan().construct(config)
     ConfigGet().construct(config)
     ConfigSet().construct(config)
+
+    CppClass().construct(cpp)
 
     JSLambda().construct(js)
 
