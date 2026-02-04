@@ -64,7 +64,7 @@ class JSPackageManager(Executable):
                 cwd=at,
                 shell=True,
                 check=True,
-                # capture_output=True,
+                capture_output=True,
                 text=True
             )
             return True
@@ -110,7 +110,8 @@ class JSModuleSystem(ABC):
         cls,
         source: str,
         imports: list[str | dict[str, str]] | None,
-        default: str | None
+        default: str | None,
+        type_only: bool
     ) -> str:
         pass
 
@@ -140,7 +141,8 @@ class CommonJS(JSModuleSystem):
         cls,
         source: str,
         imports: list[str | dict[str, str]] | None = None,
-        default: str | None = None
+        default: str | None = None,
+        type_only: bool = False
     ) -> str:
         if imports is None and default is None:
             return ''
@@ -148,6 +150,8 @@ class CommonJS(JSModuleSystem):
         from devtools.config.rule_set import JavaScriptRules
         rules = JavaScriptRules.generate()
         lines = []
+
+        type_only
 
         if imports and len(imports):
             spread_imports = []
@@ -243,13 +247,14 @@ class ES6(JSModuleSystem):
         cls,
         source: str,
         imports: list[str | dict[str, str]] | None = None,
-        default: str | None = None
+        default: str | None = None,
+        type_only: bool = False
     ) -> str:
         if imports is None and default is None:
             return ''
         from devtools.config.rule_set import JavaScriptRules
         rules = JavaScriptRules.generate()
-        stmt = ['import']
+        stmt = ['import', 'type' if type_only else '']
         
         modules = []
         if default: 
@@ -291,10 +296,10 @@ class ES6(JSModuleSystem):
             for i, export in enumerate(exports):
                 if isinstance(export, dict) and len(export) == 1:
                     name, alias = next(iter(export.items()))
-                    named_exports.append(f"{name} as {alias}{',' if i < len(exports) - 1 else rules.es5_c}")
+                    named_exports.append(f"{name} as {alias}")
                 elif isinstance(export, str):
-                    named_exports.append(f"{export}{',' if i < len(exports) - 1 else rules.es5_c}")
-            lines.append(f"export {{{rules.br_s}{' '.join(named_exports)}{rules.br_s}}}{rules.semi}")
+                    named_exports.append(f"{export}")
+            lines.append(f"export {{{rules.br_s}{', '.join(named_exports)}{rules.es5_c}{rules.br_s}}}{rules.semi}")
 
         if default is not None:
             lines.append(f"export default {default}{rules.semi}")

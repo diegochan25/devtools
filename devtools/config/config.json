@@ -13,9 +13,9 @@
         "trailing_comma": "none",
         "arrow_fn_parentheses": "use",
         "event_var_name": "event",
-        "runtime": "bun",
+        "runtime": "node",
         "module": "es6",
-        "package_manager": "bun"
+        "package_manager": "npm"
     },
     "python": {
         "quotes": "single",

@@ -58,7 +58,7 @@ class JavaScriptRules(LanguageRules):
             eol = linesep,
             runtime = NodeJS if cfg.runtime == 'node' else Deno if cfg.runtime == 'deno' else Bun,
             module = CommonJS if cfg.module == 'commonjs' else ES6,
-            package_manager = NPM if cfg.module == 'npm' else Yarn if cfg.module == 'yarn' else PNPM if cfg.module == 'pnpm' else Bun
+            package_manager = NPM if cfg.package_manager == 'npm' else Yarn if cfg.package_manager == 'yarn' else PNPM if cfg.package_manager == 'pnpm' else Bun
         )
 
 @dataclass

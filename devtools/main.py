@@ -12,6 +12,8 @@ from devtools.commands.nest.controller import NestController
 from devtools.commands.nest.module import NestModule
 from devtools.commands.nest.project import NestProject
 from devtools.commands.nest.service import NestService
+from devtools.commands.ts.aws_lambda import TSLambda
+from devtools.commands.ts.cmd import TSCmd
 
 def main():
     cli = ArgumentParser(prog='devtools')
@@ -20,6 +22,7 @@ def main():
     config = ConfigCmd().construct(commands)
     cpp = CppCmd().construct(commands)
     js = JSCmd().construct(commands)
+    ts = TSCmd().construct(commands)
     nest = NestCmd().construct(commands)
 
     ConfigScan().construct(config)
@@ -29,6 +32,8 @@ def main():
     CppClass().construct(cpp)
 
     JSLambda().construct(js)
+
+    TSLambda().construct(ts)
 
     NestModule().construct(nest)
     NestController().construct(nest)
