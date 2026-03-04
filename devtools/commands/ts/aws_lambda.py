@@ -8,76 +8,98 @@ from devtools.core.io import die
 from devtools.core.lang.json import CompilerOptions, PackageJson, TSConfigJson
 from devtools.core.lib import case_map
 from devtools.templates.ts.aws_lambda import ts_lambda
+from devtools.templates.ts.aws_lambda_spec import ts_lambda_spec
+
 
 class TSLambda(Command):
-    _name = 'lambda'
-    _help = 'Create a TypeScript AWS Lambda function for Node 24.x runtime use.'
+    _name = "lambda"
+    _help = "Create a TypeScript AWS Lambda function for Node 24.x runtime use."
 
     @abortable
-    @requires('path')
+    @requires("path")
     def execute(self, **kwargs):
-        abspath = path.abspath(path.normpath(kwargs.get('path')))
+        abspath = path.abspath(path.normpath(kwargs.get("path")))
         basename = path.basename(abspath)
         rules = JavaScriptRules.generate()
         module = rules.module.name
 
-        try: 
+        try:
             makedirs(abspath)
         except FileExistsError:
             die(f"Directory at {abspath} already exists.")
         else:
             index_ts = ts_lambda()
             package_json = Template(
-                filename = 'package.json',
-                contents = PackageJson(
-                name = case_map(basename).kebab,
-                version = '0.1.0',
-                type = 'commonjs' if module == 'commonjs' else 'module',
-                private = True,
-                main = posixpath.join('dist', 'index.js'),
-                files=['dist'],
-                scripts = {
-                    'build': 'tsc'
-                },
-                engines={
-                    'node': '>=18'
-                }
-            ).todict())
+                filename="package.json",
+                contents=PackageJson(
+                    name=case_map(basename).kebab,
+                    version="0.1.0",
+                    type="commonjs" if module == "commonjs" else "module",
+                    private=True,
+                    main=posixpath.join("dist", "index.js"),
+                    files=["dist"],
+                    scripts={
+                        "build": "tsc",
+                        "test": "node --import tsx --experimental-test-module-mocks --test test/**/*.spec.ts",
+                    },
+                    engines={"node": ">=18"},
+                ).todict(),
+            )
+            index_spec_ts = ts_lambda_spec(name=basename)
             tsconfig_json = Template(
-                filename='tsconfig.json',
+                filename="tsconfig.json",
                 contents=TSConfigJson(
-                    include=['src/**/*.ts'],
+                    include=["src/**/*.ts"],
                     compilerOptions=CompilerOptions(
-                        target='esnext',
-                        module='commonjs' if module == 'commonjs' else 'nodenext',
-                        moduleResolution='node' if module == 'commonjs' else 'nodenext',
-                        outDir='dist',
-                        rootDir='src',
+                        target="esnext",
+                        module="commonjs" if module == "commonjs" else "nodenext",
+                        moduleResolution="node" if module == "commonjs" else "nodenext",
+                        outDir="dist",
+                        rootDir="src",
+                        types=["node", "aws-lambda"],
                         declaration=True,
                         declarationMap=False,
                         sourceMap=False,
                         removeComments=True,
                         strict=True,
                         esModuleInterop=True,
+                        verbatimModuleSyntax=True,
                     ),
-                    exclude=['node_modules', 'dist']
-                ).todict()
+                    exclude=["node_modules", "dist", "test"],
+                ).todict(),
             )
 
-            src = path.join(abspath, 'src')
+            src = path.join(abspath, "src")
+            test = path.join(abspath, "test")
             makedirs(src, exist_ok=True)
+            makedirs(test, exist_ok=True)
             index_ts.touch(at=src)
+            index_spec_ts.touch(at=test)
             package_json.touch(at=abspath)
             tsconfig_json.touch(at=abspath)
-            
+
             if (pm := rules.package_manager).get_version() is not None:
-                if pm.install('typescript', '@types/node', '@types/aws-lambda', at=abspath, dev=True):
-                    die(f"Lambda function '{basename}' successfully created at {abspath}", fg='green', code=0)
+                if pm.install(
+                    "typescript",
+                    "@types/node",
+                    "@types/aws-lambda",
+                    "tsx",
+                    at=abspath,
+                    dev=True,
+                ):
+                    die(
+                        f"Lambda function '{basename}' successfully created at {abspath}",
+                        fg="green",
+                        code=0,
+                    )
                 else:
                     die(f"Lambda function '{basename}' could not be created.")
 
     def construct(self, parent):
         parser = super().construct(parent)
-        parser.add_argument('path', help='The path where the lambda function should be created. The last component of the path will be used for the function name')
+        parser.add_argument(
+            "path",
+            help="The path where the lambda function should be created. The last component of the path will be used for the function name",
+        )
         parser.set_defaults(fn=self.execute)
         return parser

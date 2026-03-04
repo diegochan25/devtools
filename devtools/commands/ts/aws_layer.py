@@ -29,38 +29,14 @@ class TSLambda(Command):
             index_ts = ts_lambda()
             package_json = Template(
                 filename = 'package.json',
-                contents = PackageJson(
-                name = case_map(basename).kebab,
-                version = '0.1.0',
-                type = 'commonjs' if module == 'commonjs' else 'module',
-                private = True,
-                main = posixpath.join('dist', 'index.js'),
-                files=['dist'],
-                scripts = {
-                    'build': 'tsc'
-                },
-                engines={
-                    'node': '>=18'
-                }
-            ).todict())
+                contents = PackageJson().todict()
+            )
             tsconfig_json = Template(
                 filename='tsconfig.json',
                 contents=TSConfigJson(
-                    include=['src/**/*.ts'],
-                    compilerOptions=CompilerOptions(
-                        target='esnext',
-                        module='commonjs' if module == 'commonjs' else 'nodenext',
-                        moduleResolution='node' if module == 'commonjs' else 'nodenext',
-                        outDir='dist',
-                        rootDir='src',
-                        declaration=True,
-                        declarationMap=False,
-                        sourceMap=False,
-                        removeComments=True,
-                        strict=True,
-                        esModuleInterop=True,
-                    ),
-                    exclude=['node_modules', 'dist']
+                    include=[],
+                    compilerOptions=CompilerOptions(),
+                    exclude=[]
                 ).todict()
             )
 
